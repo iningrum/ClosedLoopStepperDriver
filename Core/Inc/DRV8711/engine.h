@@ -151,8 +151,8 @@ void writeReg(DRV8711SPI_t *obj, uint8_t address, uint16_t value)
 
     selectChip(obj);
     uint16_t payload = ((address & 0b111) << 12) | (value & 0xFFF);
-    SPI_TX_BUFFER[0U] = (uint8_t)(payload & 0x00FF);
-    SPI_TX_BUFFER[1U] = (uint8_t)(payload & 0xFF00);
+    SPI_TX_BUFFER[0U] = (uint8_t)(payload & 0xFF00);
+    SPI_TX_BUFFER[1U] = (uint8_t)(payload & 0x00FF);
     SPI_TX_BUFFER[2U] = 0x00;
     HAL_SPI_Transmit(obj->hspi1, (uint8_t*)SPI_TX_BUFFER, 16, 100);
     //transfer(((address & 0b111) << 12) | (value & 0xFFF));
@@ -371,7 +371,7 @@ void setStepMode(DRV8711SPI_t *obj, DRV8711_STEP_MODE_t step)
     // smallest possible value obtained by this method is 177U (0x7F),
     // THEREFORE if stepMode is greater than 176U and not equal to 256U, value is incorrect.
     if ((~stepMode > 177U) && stepMode != 0xFF)
-    { // stepMode vlue overflow, set to 256U
+    { // stepMode value overflow, set to 256U
         stepMode = 255U;
     }
     obj->ctrl = (obj->ctrl & 0b111110000111) | (stepMode << 3);
