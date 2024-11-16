@@ -22,7 +22,8 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "led.h"
+DRV8711_LED_t* __LED;
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -119,7 +120,15 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
-
+  DRV8711_LED_t LED;
+  __LED = &LED;
+  LED.LED_FAULT = 1U;
+  LED.LED_OK = 1U;
+  LED.LED_WS = 0U;
+  applyLed(&LED);
+  osDelay(1);
+  LED.LED_FAULT = 0U;
+  applyLed(&LED);
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -170,7 +179,9 @@ int main(void)
   /* USER CODE BEGIN RTOS_QUEUES */
   /* add queues, ... */
   /* USER CODE END RTOS_QUEUES */
+  /* USER CODE BEGIN BING_CZILLING */
 
+  /* USER CODE END BING_CZILLING */
   /* Create the thread(s) */
   /* creation of defaultTask */
   defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
@@ -709,7 +720,6 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
-
 /* USER CODE END 4 */
 
 /* USER CODE BEGIN Header_StartDefaultTask */
@@ -777,6 +787,8 @@ void StartFeedbackTask(void *argument)
 {
   /* USER CODE BEGIN StartFeedbackTask */
   /* Infinite loop */
+  __LED->LED_WS = 1U;
+  applyLed(__LED);
   for(;;)
   {
     osDelay(1);
@@ -798,6 +810,8 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 
   /* USER CODE END Callback 0 */
   if (htim->Instance == TIM1) {
+    __LED->LED_OK = (__LED->LED_OK ^ 1U);
+    applyLed(__LED);
     HAL_IncTick();
   }
   /* USER CODE BEGIN Callback 1 */
@@ -814,6 +828,8 @@ void Error_Handler(void)
   /* USER CODE BEGIN Error_Handler_Debug */
   /* User can add his own implementation to report the HAL error return state */
   __disable_irq();
+  __LED->LED_FAULT = 1U;
+  applyLed(__LED);
   while (1)
   {
   }
