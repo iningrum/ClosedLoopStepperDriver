@@ -22,7 +22,10 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "DEBUG_LOG.h"
 #include "led.h"
+#include "engine.h"
+DRV8711_ENGINE_t* __ENGINE;
 DRV8711_LED_t* __LED;
 /* USER CODE END Includes */
 
@@ -118,10 +121,12 @@ void StartFeedbackTask(void *argument);
   */
 int main(void)
 {
-
+  _write(0x0, "SYSTEM_INIT", 11U);
   /* USER CODE BEGIN 1 */
   DRV8711_LED_t LED;
+  DRV8711_ENGINE_t ENGINE;
   __LED = &LED;
+  __ENGINE = &ENGINE;
   LED.LED_FAULT = 1U;
   LED.LED_OK = 1U;
   LED.LED_WS = 0U;
@@ -769,9 +774,22 @@ void StartStepperRegTask(void *argument)
 {
   /* USER CODE BEGIN StartStepperRegTask */
   /* Infinite loop */
+  __ENGINE->chip_enable = 1U;
+  unsigned int index;
   for(;;)
   {
-    osDelay(1);
+    __ENGINE->dir = 0U; // left
+    for(index=0U; index<= 8U; index++){
+      __ENGINE->step = index;
+      applyEngine(__ENGINE);
+      osDelay(1);
+    }
+    __ENGINE->dir = 1U; // right
+    for(; index >= 0U; index--){
+      __ENGINE->step = index;
+      applyEngine(__ENGINE);
+      osDelay(1);
+    }
   }
   /* USER CODE END StartStepperRegTask */
 }
@@ -827,6 +845,7 @@ void Error_Handler(void)
 {
   /* USER CODE BEGIN Error_Handler_Debug */
   /* User can add his own implementation to report the HAL error return state */
+  _write(0x0, "FAULT_ENCOUNTERED", 17U);
   __disable_irq();
   __LED->LED_FAULT = 1U;
   applyLed(__LED);
