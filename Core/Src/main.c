@@ -131,7 +131,7 @@ int main(void)
   LED.LED_OK = 1U;
   LED.LED_WS = 0U;
   applyLed(&LED);
-  osDelay(1);
+  //osDelay(1);
   LED.LED_FAULT = 0U;
   applyLed(&LED);
   /* USER CODE END 1 */
