@@ -121,7 +121,8 @@ void StartFeedbackTask(void *argument);
   */
 int main(void)
 {
-  _write(0x0, "SYSTEM_INIT", 11U);
+  char buffer[20] = "SYSTEM_INIT";
+  _write(0x0, buffer, 11U);
   /* USER CODE BEGIN 1 */
   DRV8711_LED_t LED;
   DRV8711_ENGINE_t ENGINE;

@@ -20,7 +20,7 @@ typedef enum
 }DRV8711_REGISTERS_t;
 void applyEngine(DRV8711_ENGINE_t* obj);
 
-uint16_t readRegister(uint8_t address, DRV8711_ENGINE_t* obj, SPI_HandleTypeDef* spiHandle)
+/*uint16_t readRegister(uint8_t address, DRV8711_ENGINE_t* obj, SPI_HandleTypeDef* spiHandle)
 {
     if(NULL==obj) return;
 // Read/write bit and register address are the first 4 bits of the first
@@ -34,11 +34,11 @@ uint8_t buffer[] = {
 		address,
 		0x00
 };
-HAL_SPI_Transmit_IT(&spiHandle, ((0x8 | (address & 0b111)) << 12), 12);
+/*HAL_SPI_Transmit_IT(&spiHandle, ((0x8 | (address & 0b111)) << 12), 12);
 obj->chip_enable = 0U;
 applyEngine(obj);
 return dataOut & 0xFFF;
-}
+}*/
 
 void applyEngine(DRV8711_ENGINE_t* obj){
 #if defined(ENGINE_CONTROL_ENABLE)
