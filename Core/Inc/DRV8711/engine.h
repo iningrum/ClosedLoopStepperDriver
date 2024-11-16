@@ -1,6 +1,8 @@
 #ifndef INC_DRV8711_ENGINE_H_
 #define INC_DRV8711_ENGINE_H_
 // THIS IS A PORT OF FOLLOWING ARDUINO LIBRARY BY POLULU
+// from arduino to stm32
+// from C++ to C
 // https://github.com/pololu/high-power-stepper-driver-arduino/blob/master/HighPowerStepperDriver.h#L248
 #include "CONFIG.h"
 #include "stm32g4xx_hal.h"
@@ -65,13 +67,14 @@ typedef struct
     uint16_t ctrl, torque, off, blank, decay, stall, drive;
     GPIO_TypeDef *gpio_base_address;
     uint16_t gpio_pin;
+    SPI_HandleTypeDef* hspi1;
 } DRV8711SPI_t;
 /**                                         FUNCTION DECLARATIONS                                      **/
 void DRV8711SPI_setChipSelectPin(DRV8711SPI_t *obj);
 uint16_t readReg(DRV8711SPI_t *obj, DRV8711_REGISTER_ADDRESS_t address);
 void writeReg(DRV8711SPI_t *obj, uint8_t address, uint16_t value);
-void selectChip();
-void deselectChip();
+void selectChip(DRV8711SPI_t *obj);
+void deselectChip(DRV8711SPI_t *obj);
 void DRV8711_init(DRV8711SPI_t *obj);
 void setChipSelectPin(DRV8711SPI_t *obj, GPIO_TypeDef *gpio_base_address, uint16_t gpio_pin);
 void resetSettings(DRV8711SPI_t *obj);
@@ -132,10 +135,13 @@ uint16_t readReg(DRV8711SPI_t *obj, DRV8711_REGISTER_ADDRESS_t address)
     // byte; data is in the remaining 4 bits of the first byte combined with
     // the second byte (12 bits total).
     // TODO
-    selectChip();
-    uint16_t dataOut = transfer((0x8 | (address & 0b111)) << 12);
-    deselectChip();
-    return dataOut & 0xFFF;
+    selectChip(obj);
+    //uint16_t dataOut = transfer((0x8 | (address & 0b111)) << 12);
+    HAL_SPI_Transmit(obj->hspi1, (uint8_t*)address, 1, 100);
+    uint8_t result;
+    HAL_SPI_Receive(obj->hspi1, &result, 2, 100);
+    deselectChip(obj);
+    return result;
 };
 
 /// Writes the specified value to a register.
@@ -145,26 +151,29 @@ void writeReg(DRV8711SPI_t *obj, uint8_t address, uint16_t value)
     // byte; data is in the remaining 4 bits of the first byte combined with
     // the second byte (12 bits total).
 
-    selectChip();
+    selectChip(obj);
+    HAL_SPI_Transmit(obj->hspi1, (uint8_t*)address, 1, 100);
     transfer(((address & 0b111) << 12) | (value & 0xFFF));
 
     // The CS line must go low after writing for the value to actually take
     // effect.
-    deselectChip();
+    deselectChip(obj);
 }
 
 
 
-void selectChip()
+void selectChip(DRV8711SPI_t *obj)
 {
     //digitalWrite(csPin, HIGH);
+    HAL_GPIO_WritePin(obj->gpio_base_address, obj->gpio_pin, (GPIO_PinState) 1U);
     //SPI.beginTransaction(settings);
 }
 
-void deselectChip()
+void deselectChip(DRV8711SPI_t* obj)
 {
     //SPI.endTransaction();
     //digitalWrite(csPin, LOW);
+    HAL_GPIO_WritePin(obj->gpio_base_address, obj->gpio_pin, (GPIO_PinState) 0U);
 }
 
 
