@@ -23,6 +23,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "led.h"
+#include "engine.h"
 DRV8711_LED_t* __LED;
 /* USER CODE END Includes */
 

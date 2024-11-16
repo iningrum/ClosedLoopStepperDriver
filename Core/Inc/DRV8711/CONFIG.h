@@ -6,4 +6,5 @@
  * Hopefully this minimizes amount of hard faults.
  */
 #define STATUS_LED_ENABLE 1U
+#define ENGINE_SPI_ENABLE 1U
 #endif //DRV8711_CONFIG_H
