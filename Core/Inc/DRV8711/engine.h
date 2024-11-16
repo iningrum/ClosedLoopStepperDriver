@@ -6,7 +6,8 @@
 // https://github.com/pololu/high-power-stepper-driver-arduino/blob/master/HighPowerStepperDriver.h#L248
 #include "CONFIG.h"
 #include "stm32g4xx_hal.h"
-
+uint8_t SPI_RX_BUFFER[4];
+uint8_t SPI_TX_BUFFER[4];
 
 /// Addresses of control and status registers.
 typedef enum
@@ -149,7 +150,11 @@ void writeReg(DRV8711SPI_t *obj, uint8_t address, uint16_t value)
     // the second byte (12 bits total).
 
     selectChip(obj);
-    HAL_SPI_Transmit(obj->hspi1, (uint8_t*)address, 8, 100);
+    uint16_t payload = ((address & 0b111) << 12) | (value & 0xFFF);
+    SPI_TX_BUFFER[0U] = (uint8_t)(payload & 0x00FF);
+    SPI_TX_BUFFER[1U] = (uint8_t)(payload & 0xFF00);
+    SPI_TX_BUFFER[2U] = 0x00;
+    HAL_SPI_Transmit(obj->hspi1, (uint8_t*)SPI_TX_BUFFER, 16, 100);
     //transfer(((address & 0b111) << 12) | (value & 0xFFF));
 
     // The CS line must go low after writing for the value to actually take
@@ -338,6 +343,7 @@ void step(DRV8711SPI_t *obj)
     if (NULL == obj)
         return;
     writeReg(obj, CTRL, obj->ctrl | (1 << 2));
+    HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_1);
 #endif
 }
 

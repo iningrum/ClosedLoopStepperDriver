@@ -777,17 +777,20 @@ void StartStepperRegTask(void *argument)
   DRV8711_init(__ENGINE);
   DRV8711SPI_setChipSelectPin(__ENGINE, GPIOA, GPIO_PIN_4);
   //setCurrentMilliamps36v4(__ENGINE, idk);
-  setStepMode(__ENGINE, 64U);
-  clearFaults(__ENGINE);
-  clearStatus(__ENGINE);
+  setStepMode(__ENGINE, 0U);
+  //clearFaults(__ENGINE);
+  //clearStatus(__ENGINE);
   enableDriver(__ENGINE);
-  setDirection(__ENGINE, 1U);
+  //setDirection(__ENGINE, 1U);
 
   /* Infinite loop */
   for(;;)
   {
-    step(__ENGINE);
-    osDelay(1);
+	 for(unsigned int i=0; i<1024U; i++){
+		 step(__ENGINE);
+		 osDelay(1);
+	 }
+    osDelay(250);
   }
   /* USER CODE END StartStepperRegTask */
 }

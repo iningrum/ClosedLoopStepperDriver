@@ -2,6 +2,7 @@
 #define DRV8711_LED_H
 #include "CONFIG.h"
 #include "stm32g4xx_hal.h"
+
 typedef struct{
 	GPIO_PinState LED_OK;
 	GPIO_PinState LED_FAULT;
