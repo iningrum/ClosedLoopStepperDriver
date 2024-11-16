@@ -25,6 +25,7 @@
 #include "led.h"
 #include "engine.h"
 DRV8711_LED_t* __LED;
+DRV8711SPI_t* __ENGINE;
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -122,7 +123,10 @@ int main(void)
 
   /* USER CODE BEGIN 1 */
   DRV8711_LED_t LED;
+  DRV8711SPI_t ENGINE;
   __LED = &LED;
+  __ENGINE = &ENGINE;
+  
   LED.LED_FAULT = 1U;
   LED.LED_OK = 1U;
   LED.LED_WS = 0U;
@@ -769,9 +773,20 @@ void StartEncoderTask(void *argument)
 void StartStepperRegTask(void *argument)
 {
   /* USER CODE BEGIN StartStepperRegTask */
+  __ENGINE->hspi1 = &hspi1;
+  DRV8711_init(__ENGINE);
+  DRV8711SPI_setChipSelectPin(__ENGINE, GPIOA, GPIO_PIN_4);
+  //setCurrentMilliamps36v4(__ENGINE, idk);
+  setStepMode(__ENGINE, 64U);
+  clearFaults(__ENGINE);
+  clearStatus(__ENGINE);
+  enableDriver(__ENGINE);
+  setDirection(__ENGINE, 1U);
+
   /* Infinite loop */
   for(;;)
   {
+    step(__ENGINE);
     osDelay(1);
   }
   /* USER CODE END StartStepperRegTask */

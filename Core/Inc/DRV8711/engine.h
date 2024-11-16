@@ -70,7 +70,7 @@ typedef struct
     SPI_HandleTypeDef* hspi1;
 } DRV8711SPI_t;
 /**                                         FUNCTION DECLARATIONS                                      **/
-void DRV8711SPI_setChipSelectPin(DRV8711SPI_t *obj);
+void DRV8711SPI_setChipSelectPin(DRV8711SPI_t *obj, GPIO_TypeDef *gpio_base_address, uint16_t gpio_pin);
 uint16_t readReg(DRV8711SPI_t *obj, DRV8711_REGISTER_ADDRESS_t address);
 void writeReg(DRV8711SPI_t *obj, uint8_t address, uint16_t value);
 void selectChip(DRV8711SPI_t *obj);
@@ -116,15 +116,12 @@ void writeDRIVE(DRV8711SPI_t *obj);
 /// Configures this object to use the specified pin as a chip select pin.
 ///
 /// You must use a chip select pin; the DRV8711 requires it.
-void DRV8711SPI_setChipSelectPin(DRV8711SPI_t *obj)
-{
+void DRV8711SPI_setChipSelectPin(DRV8711SPI_t *obj, GPIO_TypeDef *gpio_base_address, uint16_t gpio_pin)
+{ // function redundant but leave for now
 #if defined(ENGINE_SPI_ENABLE)
     if (NULL == obj)
         return;
-    // TODO
-    //csPin = pin;
-    //digitalWrite(csPin, LOW);
-    //pinMode(csPin, OUTPUT);
+    setChipSelectPin(obj, gpio_base_address, gpio_pin);
 #endif // ENGINE_SPI_ENABLE
 }
 
@@ -152,8 +149,8 @@ void writeReg(DRV8711SPI_t *obj, uint8_t address, uint16_t value)
     // the second byte (12 bits total).
 
     selectChip(obj);
-    HAL_SPI_Transmit(obj->hspi1, (uint8_t*)address, 1, 100);
-    transfer(((address & 0b111) << 12) | (value & 0xFFF));
+    HAL_SPI_Transmit(obj->hspi1, (uint8_t*)address, 8, 100);
+    //transfer(((address & 0b111) << 12) | (value & 0xFFF));
 
     // The CS line must go low after writing for the value to actually take
     // effect.
