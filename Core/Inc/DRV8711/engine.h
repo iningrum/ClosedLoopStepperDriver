@@ -4,8 +4,7 @@
 // https://github.com/pololu/high-power-stepper-driver-arduino/blob/master/HighPowerStepperDriver.h#L248
 #include "CONFIG.h"
 #include "stm32g4xx_hal.h"
-// #include <Arduino.h>
-// #include <SPI.h>
+
 
 /// Addresses of control and status registers.
 typedef enum
@@ -19,18 +18,97 @@ typedef enum
     DRIVE = 0x06,
     STATUS = 0x07,
 } DRV8711_REGISTER_ADDRESS_t;
+/// Possible arguments to setStepMode().
+typedef enum
+{
+    MicroStep256 = 256,
+    MicroStep128 = 128,
+    MicroStep64 = 64,
+    MicroStep32 = 32,
+    MicroStep16 = 16,
+    MicroStep8 = 8,
+    MicroStep4 = 4,
+    MicroStep2 = 2,
+    MicroStep1 = 1,
+} DRV8711_STEP_MODE_t;
 
-/// This class provides low-level functions for reading and writing from the SPI
-/// interface of a DRV8711 stepper motor controller IC.
+/// Possible arguments to setDecayMode().
+typedef enum
+{
+    Slow = 0b000,
+    SlowIncMixedDec = 0b001,
+    Fast = 0b010,
+    Mixed = 0b011,
+    SlowIncAutoMixedDec = 0b100,
+    AutoMixed = 0b101,
+} DRV8711_DECAY_MODE_t;
+
+/// Bits that are set in the return value of readStatus() to indicate status
+/// conditions.
 ///
-/// Most users should use the HighPowerStepperDriver class, which provides a
-/// higher-level interface, instead of this class.
+/// See the DRV8711 datasheet for detailed descriptions of these status
+/// conditions.
+typedef enum
+{
+    OTS = 0,    /// Overtemperature shutdown
+    AOCP = 1,   /// Channel A overcurrent shutdown
+    BOCP = 2,   /// Channel B overcurrent shutdown
+    APDF = 3,   /// Channel A predriver fault
+    BPDF = 4,   /// Channel B predriver fault
+    UVLO = 5,   /// Undervoltage lockout
+    STD = 6,    /// Stall detected
+    STDLAT = 7, /// Latched stall detect
+} DRV8711_STATUS_t;
+
 typedef struct
 {
     uint16_t ctrl, torque, off, blank, decay, stall, drive;
     GPIO_TypeDef *gpio_base_address;
     uint16_t gpio_pin;
 } DRV8711SPI_t;
+/**                                         FUNCTION DECLARATIONS                                      **/
+void DRV8711SPI_setChipSelectPin(DRV8711SPI_t *obj);
+uint16_t readReg(DRV8711SPI_t *obj, DRV8711_REGISTER_ADDRESS_t address);
+void writeReg(DRV8711SPI_t *obj, uint8_t address, uint16_t value);
+void selectChip();
+void deselectChip();
+void DRV8711_init(DRV8711SPI_t *obj);
+void setChipSelectPin(DRV8711SPI_t *obj, GPIO_TypeDef *gpio_base_address, uint16_t gpio_pin);
+void resetSettings(DRV8711SPI_t *obj);
+unsigned int verifySettings(DRV8711SPI_t *obj);
+void applySettings(DRV8711SPI_t *obj);
+void enableDriver(DRV8711SPI_t *obj);
+void disableDriver(DRV8711SPI_t *obj);
+void setDirection(DRV8711SPI_t *obj, uint8_t right);
+uint16_t getDirection(DRV8711SPI_t *obj);
+void step(DRV8711SPI_t *obj);
+void setStepMode(DRV8711SPI_t *obj, DRV8711_STEP_MODE_t step);
+void setCurrentMilliamps36v4(DRV8711SPI_t *obj, uint16_t current);
+void setDecayMode(DRV8711SPI_t *obj, DRV8711_DECAY_MODE_t mode);
+uint8_t readStatus(DRV8711SPI_t *obj);
+void clearStatus(DRV8711SPI_t *obj);
+uint8_t readFaults(DRV8711SPI_t *obj);
+void clearFaults(DRV8711SPI_t *obj);
+void writeCTRL(DRV8711SPI_t *obj);
+void writeTORQUE(DRV8711SPI_t *obj);
+void writeOFF(DRV8711SPI_t *obj);
+void writeBLANK(DRV8711SPI_t *obj);
+void writeDECAY(DRV8711SPI_t *obj);
+void writeSTALL(DRV8711SPI_t *obj);
+void writeDRIVE(DRV8711SPI_t *obj);
+
+/**                                         END     DECLARATIONS                                      **/
+// #include <Arduino.h>
+// #include <SPI.h>
+
+
+
+/// This class provides low-level functions for reading and writing from the SPI
+/// interface of a DRV8711 stepper motor controller IC.
+///
+/// Most users should use the HighPowerStepperDriver class, which provides a
+/// higher-level interface, instead of this class.
+
 
 /// Configures this object to use the specified pin as a chip select pin.
 ///
@@ -89,47 +167,7 @@ void deselectChip()
     //digitalWrite(csPin, LOW);
 }
 
-/// Possible arguments to setStepMode().
-typedef enum
-{
-    MicroStep256 = 256,
-    MicroStep128 = 128,
-    MicroStep64 = 64,
-    MicroStep32 = 32,
-    MicroStep16 = 16,
-    MicroStep8 = 8,
-    MicroStep4 = 4,
-    MicroStep2 = 2,
-    MicroStep1 = 1,
-} DRV8711_STEP_MODE_t;
 
-/// Possible arguments to setDecayMode().
-typedef enum
-{
-    Slow = 0b000,
-    SlowIncMixedDec = 0b001,
-    Fast = 0b010,
-    Mixed = 0b011,
-    SlowIncAutoMixedDec = 0b100,
-    AutoMixed = 0b101,
-} DRV8711_DECAY_MODE_t;
-
-/// Bits that are set in the return value of readStatus() to indicate status
-/// conditions.
-///
-/// See the DRV8711 datasheet for detailed descriptions of these status
-/// conditions.
-typedef enum
-{
-    OTS = 0,    /// Overtemperature shutdown
-    AOCP = 1,   /// Channel A overcurrent shutdown
-    BOCP = 2,   /// Channel B overcurrent shutdown
-    APDF = 3,   /// Channel A predriver fault
-    BPDF = 4,   /// Channel B predriver fault
-    UVLO = 5,   /// Undervoltage lockout
-    STD = 6,    /// Stall detected
-    STDLAT = 7, /// Latched stall detect
-} DRV8711_STATUS_t;
 ///////////////////////////////////////////////////////////////////////////////////////
 
 void DRV8711_init(DRV8711SPI_t *obj)
@@ -229,7 +267,7 @@ void applySettings(DRV8711SPI_t *obj)
     // to have all the other settings correct first.  (For example, TORQUE
     // defaults to 0xFF (the maximum value), so it would be better to set a more
     // appropriate value if necessary before enabling the motor.)
-    writeCTRL();
+    writeCTRL(obj);
 }
 
 /// Enables the driver (ENBL = 1).
@@ -239,7 +277,7 @@ void enableDriver(DRV8711SPI_t *obj)
     if (NULL == obj)
         return;
     obj->ctrl |= (1 << 0);
-    writeCTRL();
+    writeCTRL(obj);
 #endif // ENGINE_SPI_ENABLE
 }
 
@@ -250,7 +288,7 @@ void disableDriver(DRV8711SPI_t *obj)
     if (NULL == obj)
         return;
     obj->ctrl &= ~(1 << 0);
-    writeCTRL();
+    writeCTRL(obj);
 #endif // ENGINE_SPI_ENABLE
 }
 
@@ -266,7 +304,7 @@ void setDirection(DRV8711SPI_t *obj, uint8_t right)
     if (NULL == obj)
         return;
     obj->ctrl = right; // if not right (0U), engine moves left
-    writeCTRL();
+    writeCTRL(obj);
 #endif // ENGINE_SPI_ENABLE
 }
 
@@ -325,7 +363,7 @@ void setStepMode(DRV8711SPI_t *obj, DRV8711_STEP_MODE_t step)
         stepMode = 255U;
     }
     obj->ctrl = (obj->ctrl & 0b111110000111) | (stepMode << 3);
-    writeCTRL();
+    writeCTRL(obj);
 #endif // ENGINE_SPI_ENABLE
 }
 
@@ -383,7 +421,7 @@ void setCurrentMilliamps36v4(DRV8711SPI_t *obj, uint16_t current)
     }
 
     obj->ctrl = (obj->ctrl & 0b110011111111) | (isgainBits << 8);
-    writeCTRL();
+    writeCTRL(obj);
     obj->torque = (obj->torque & 0b111100000000) | torqueBits;
     writeTORQUE(obj);
 #endif // ENGINE_SPI_ENABLE
