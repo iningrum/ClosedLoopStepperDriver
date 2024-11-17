@@ -8,6 +8,7 @@
 
 #define STATUS_LED_ENABLE 1U
 #define ENGINE_SPI_ENABLE 1U
+#define DEBUG_LOG_ENABLE 1U
 /*********************************PARAMETERS*********************************/
 #define SPI_BUFFER_SIZE 4U
 #endif //DRV8711_CONFIG_H

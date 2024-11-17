@@ -67,8 +67,6 @@ void Error_Handler(void);
 #define LED_FAULT_GPIO_Port GPIOC
 #define DRV_DIR_Pin GPIO_PIN_0
 #define DRV_DIR_GPIO_Port GPIOA
-#define DRV_STEP_Pin GPIO_PIN_1
-#define DRV_STEP_GPIO_Port GPIOA
 #define DRV_RESET_Pin GPIO_PIN_2
 #define DRV_RESET_GPIO_Port GPIOA
 #define DRV_SLEEPn_Pin GPIO_PIN_3

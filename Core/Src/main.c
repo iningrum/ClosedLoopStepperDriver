@@ -24,6 +24,7 @@
 /* USER CODE BEGIN Includes */
 #include "led.h"
 #include "engine.h"
+#include "logs.h"
 DRV8711_LED_t* __LED;
 DRV8711SPI_t* __ENGINE;
 /* USER CODE END Includes */
@@ -53,6 +54,7 @@ I2C_HandleTypeDef hi2c2;
 SPI_HandleTypeDef hspi1;
 SPI_HandleTypeDef hspi2;
 
+TIM_HandleTypeDef htim2;
 TIM_HandleTypeDef htim6;
 TIM_HandleTypeDef htim8;
 DMA_HandleTypeDef hdma_tim8_ch4;
@@ -100,6 +102,7 @@ static void MX_SPI2_Init(void);
 static void MX_TIM8_Init(void);
 static void MX_ADC1_Init(void);
 static void MX_TIM6_Init(void);
+static void MX_TIM2_Init(void);
 void StartDefaultTask(void *argument);
 void StartEncoderTask(void *argument);
 void StartStepperRegTask(void *argument);
@@ -120,8 +123,9 @@ void StartFeedbackTask(void *argument);
   */
 int main(void)
 {
-
+  
   /* USER CODE BEGIN 1 */
+  printf("[STATUS]: Entering main\n");
   DRV8711_LED_t LED;
   DRV8711SPI_t ENGINE;
   __LED = &LED;
@@ -162,8 +166,9 @@ int main(void)
   MX_TIM8_Init();
   MX_ADC1_Init();
   MX_TIM6_Init();
+  MX_TIM2_Init();
   /* USER CODE BEGIN 2 */
-
+  printf("[STATUS]: Scheduler init\n");
   /* USER CODE END 2 */
 
   /* Init scheduler */
@@ -184,9 +189,7 @@ int main(void)
   /* USER CODE BEGIN RTOS_QUEUES */
   /* add queues, ... */
   /* USER CODE END RTOS_QUEUES */
-  /* USER CODE BEGIN BING_CZILLING */
 
-  /* USER CODE END BING_CZILLING */
   /* Create the thread(s) */
   /* creation of defaultTask */
   defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
@@ -503,6 +506,65 @@ static void MX_SPI2_Init(void)
 }
 
 /**
+  * @brief TIM2 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM2_Init(void)
+{
+
+  /* USER CODE BEGIN TIM2_Init 0 */
+
+  /* USER CODE END TIM2_Init 0 */
+
+  TIM_ClockConfigTypeDef sClockSourceConfig = {0};
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+  TIM_OC_InitTypeDef sConfigOC = {0};
+
+  /* USER CODE BEGIN TIM2_Init 1 */
+
+  /* USER CODE END TIM2_Init 1 */
+  htim2.Instance = TIM2;
+  htim2.Init.Prescaler = 0;
+  htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim2.Init.Period = 37048;
+  htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim2) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+  if (HAL_TIM_ConfigClockSource(&htim2, &sClockSourceConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  if (HAL_TIM_PWM_Init(&htim2) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim2, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sConfigOC.OCMode = TIM_OCMODE_PWM1;
+  sConfigOC.Pulse = 300;
+  sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
+  sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
+  if (HAL_TIM_PWM_ConfigChannel(&htim2, &sConfigOC, TIM_CHANNEL_2) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM2_Init 2 */
+
+  /* USER CODE END TIM2_Init 2 */
+  HAL_TIM_MspPostInit(&htim2);
+
+}
+
+/**
   * @brief TIM6 Initialization Function
   * @param None
   * @retval None
@@ -660,8 +722,8 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(GPIOC, LED_OK_Pin|LED_FAULT_Pin, GPIO_PIN_SET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOA, DRV_DIR_Pin|DRV_STEP_Pin|DRV_RESET_Pin|DRV_SLEEPn_Pin
-                          |DRV_CS_Pin|CAN_SHDN_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOA, DRV_DIR_Pin|DRV_RESET_Pin|DRV_SLEEPn_Pin|DRV_CS_Pin
+                          |CAN_SHDN_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(ENC_CS_GPIO_Port, ENC_CS_Pin, GPIO_PIN_RESET);
@@ -684,13 +746,6 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
-
-  /*Configure GPIO pin : DRV_STEP_Pin */
-  GPIO_InitStruct.Pin = DRV_STEP_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
-  HAL_GPIO_Init(DRV_STEP_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pins : DRV_STALLn_Pin DRV_FAULTn_Pin */
   GPIO_InitStruct.Pin = DRV_STALLn_Pin|DRV_FAULTn_Pin;
@@ -736,7 +791,9 @@ static void MX_GPIO_Init(void)
 /* USER CODE END Header_StartDefaultTask */
 void StartDefaultTask(void *argument)
 {
+  
   /* USER CODE BEGIN 5 */
+  printf("[STATUS]: DefaultTask INIT\n");
   /* Infinite loop */
   for(;;)
   {
@@ -754,7 +811,9 @@ void StartDefaultTask(void *argument)
 /* USER CODE END Header_StartEncoderTask */
 void StartEncoderTask(void *argument)
 {
+  
   /* USER CODE BEGIN StartEncoderTask */
+  printf("[STATUS]: EncoderTask init\n");
   /* Infinite loop */
   for(;;)
   {
@@ -773,6 +832,7 @@ void StartEncoderTask(void *argument)
 void StartStepperRegTask(void *argument)
 {
   /* USER CODE BEGIN StartStepperRegTask */
+  printf("[STATUS]: StepperRegTask init\n");
   __ENGINE->hspi1 = &hspi1;
   DRV8711_init(__ENGINE);
   DRV8711SPI_setChipSelectPin(__ENGINE, GPIOA, GPIO_PIN_4);
@@ -806,6 +866,7 @@ void StartStepperRegTask(void *argument)
 void StartFeedbackTask(void *argument)
 {
   /* USER CODE BEGIN StartFeedbackTask */
+  printf("[STATUS]: FeedbackTask init\n");
   /* Infinite loop */
   __LED->LED_WS = 1U;
   applyLed(__LED);
@@ -827,11 +888,9 @@ void StartFeedbackTask(void *argument)
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
   /* USER CODE BEGIN Callback 0 */
-
+  printf("[STATUS]: PeriodElapsedTask init\n");
   /* USER CODE END Callback 0 */
   if (htim->Instance == TIM1) {
-    __LED->LED_OK = (__LED->LED_OK ^ 1U);
-    applyLed(__LED);
     HAL_IncTick();
   }
   /* USER CODE BEGIN Callback 1 */
@@ -846,13 +905,14 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 void Error_Handler(void)
 {
   /* USER CODE BEGIN Error_Handler_Debug */
+  printf("[STATUS]: ErrorHandler\n");
   /* User can add his own implementation to report the HAL error return state */
   __disable_irq();
   __LED->LED_FAULT = 1U;
   applyLed(__LED);
   uint8_t engineFaults = readFaults(__ENGINE);
   uint8_t engineStatus = readStatus(__ENGINE);
-
+  // printf engineFaults...
   while (1)
   {
     // sample handling
