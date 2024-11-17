@@ -139,15 +139,11 @@ void writeReg(DRV8711SPI_t *obj, uint8_t address, uint16_t value)
     // Read/write bit and register address are the first 4 bits of the first
     // byte; data is in the remaining 4 bits of the first byte combined with
     // the second byte (12 bits total).
-
     selectChip(obj);
-    // [adr][]
     uint16_t payload = ((address & 0b111) << 12) | (value & 0xFFF);
     SPI_TX_BUFFER[0U] = (uint8_t)(payload & 0xFF00);
     SPI_TX_BUFFER[1U] = (uint8_t)(payload & 0x00FF);
     HAL_SPI_Transmit(obj->hspi1, (uint8_t*)SPI_TX_BUFFER, 2, 100);
-    //transfer(((address & 0b111) << 12) | (value & 0xFFF));
-
     // The CS line must go low after writing for the value to actually take
     // effect.
     deselectChip(obj);
@@ -157,15 +153,12 @@ void writeReg(DRV8711SPI_t *obj, uint8_t address, uint16_t value)
 
 void selectChip(DRV8711SPI_t *obj)
 {
-    //digitalWrite(csPin, HIGH);
     HAL_GPIO_WritePin(obj->gpio_base_address, obj->gpio_pin, (GPIO_PinState) 1U);
-    //SPI.beginTransaction(settings);
+
 }
 
 void deselectChip(DRV8711SPI_t* obj)
 {
-    //SPI.endTransaction();
-    //digitalWrite(csPin, LOW);
     HAL_GPIO_WritePin(obj->gpio_base_address, obj->gpio_pin, (GPIO_PinState) 0U);
 }
 
