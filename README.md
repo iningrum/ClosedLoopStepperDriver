@@ -19,6 +19,8 @@ Similar idea to `FreeRTOSConfig.h` - configure program behavior at compile time 
 
 Originally I wanted to introduce logs via [SVV/SWO](https://stackoverflow.com/a/65661978) and status displayed on leds so this approach made sense at the moment.
 ## Polulu library port
+Library port: [engine.h](https://github.com/iningrum/ClosedLoopStepperDriver/blob/master/Core/Inc/DRV8711/engine.h)
+
 I've ported polulu DRV8711 header library which was originally written in C++ and targeted for Arduino framework. The idea was to get correct code which only requires slight fixes in data transmission.
 
 Changes relative to original:
