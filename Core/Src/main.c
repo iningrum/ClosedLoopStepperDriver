@@ -850,8 +850,19 @@ void Error_Handler(void)
   __disable_irq();
   __LED->LED_FAULT = 1U;
   applyLed(__LED);
+  uint8_t engineFaults = readFaults(__ENGINE);
+  uint8_t engineStatus = readStatus(__ENGINE);
+
   while (1)
   {
+    // sample handling
+    // switch(engineFaults)
+    // case...
+    // clearFaults(__ENGINE);
+    // clearStatus(__ENGINE);
+    // clearStatus(__ENGINE);
+    // resetSettings(__ENGINE);
+    // likely goto __MAIN or sth
   }
   /* USER CODE END Error_Handler_Debug */
 }

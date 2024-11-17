@@ -6,8 +6,8 @@
 // https://github.com/pololu/high-power-stepper-driver-arduino/blob/master/HighPowerStepperDriver.h#L248
 #include "CONFIG.h"
 #include "stm32g4xx_hal.h"
-uint8_t SPI_RX_BUFFER[4];
-uint8_t SPI_TX_BUFFER[4];
+uint8_t SPI_RX_BUFFER[SPI_BUFFER_SIZE];
+uint8_t SPI_TX_BUFFER[SPI_BUFFER_SIZE];
 
 /// Addresses of control and status registers.
 typedef enum
@@ -102,17 +102,6 @@ void writeSTALL(DRV8711SPI_t *obj);
 void writeDRIVE(DRV8711SPI_t *obj);
 
 /**                                         END     DECLARATIONS                                      **/
-// #include <Arduino.h>
-// #include <SPI.h>
-
-
-
-/// This class provides low-level functions for reading and writing from the SPI
-/// interface of a DRV8711 stepper motor controller IC.
-///
-/// Most users should use the HighPowerStepperDriver class, which provides a
-/// higher-level interface, instead of this class.
-
 
 /// Configures this object to use the specified pin as a chip select pin.
 ///
@@ -357,8 +346,13 @@ void step(DRV8711SPI_t *obj)
 /// 1/4 micro-step, which is the driver's default.
 ///
 /// Example usage:
-/// ~~~{.cpp}
-/// sd.setStepMode(HPSDStepMode::MicroStep32);
+/// ~~~{.c}
+/// DRV8711SPI_t* __ENGINE; // global ptr
+/// (...)
+/// DRV8711SPI_t  ENGINE; // instance in main()
+/// __ENGINE = &ENGINE; // now ENGINE is visible in global scope till exit from main
+/// (...)
+/// setStepMode(__ENGINE, MicroStep64);
 /// ~~~
 void setStepMode(DRV8711SPI_t *obj, DRV8711_STEP_MODE_t step)
 {
@@ -366,14 +360,7 @@ void setStepMode(DRV8711SPI_t *obj, DRV8711_STEP_MODE_t step)
     if (NULL == obj)
         return;
     uint8_t stepMode = (uint8_t)step;
-    // if stepMode value is correct, only one bit from 8 should be set.
-    // by negating stepMode we should get value with only one bit unset,
-    // smallest possible value obtained by this method is 177U (0x7F),
-    // THEREFORE if stepMode is greater than 176U and not equal to 256U, value is incorrect.
-    if ((~stepMode > 177U) && stepMode != 0xFF)
-    { // stepMode value overflow, set to 256U
-        stepMode = 255U;
-    }
+    // TODO
     obj->ctrl = (obj->ctrl & 0b111110000111) | (stepMode << 3);
     writeCTRL(obj);
 #endif // ENGINE_SPI_ENABLE
@@ -396,8 +383,7 @@ void setStepMode(DRV8711SPI_t *obj, DRV8711_STEP_MODE_t step)
 ///
 /// This function takes care of setting appropriate values for ISGAIN and
 /// TORQUE to get the desired current limit.
-void setCurrentMilliamps36v4(DRV8711SPI_t *obj, uint16_t current)
-{
+void setCurrentMilliamps36v4(DRV8711SPI_t *obj, uint16_t current){
 #if defined(ENGINE_SPI_ENABLE)
     if (NULL == obj)
         return;
@@ -423,7 +409,7 @@ void setCurrentMilliamps36v4(DRV8711SPI_t *obj, uint16_t current)
     // overflow TORQUE (8 bits, 0xFF max), so we start with a gain of 40 and
     // calculate the TORQUE value needed.
     uint8_t isgainBits = 0b11;
-    uint16_t torqueBits = ((uint32_t)768 * current) / 6875;
+    uint16_t torqueBits = ((uint32_t)768U * current) / 6875U;
 
     // Halve the gain and TORQUE until the TORQUE value fits in 8 bits.
     while (torqueBits > 0xFF)
@@ -442,8 +428,13 @@ void setCurrentMilliamps36v4(DRV8711SPI_t *obj, uint16_t current)
 /// Sets the driver's decay mode (DECMOD).
 ///
 /// Example usage:
-/// ~~~{.cpp}
-/// sd.setDecayMode(HPSDDecayMode::AutoMixed);
+/// ~~~{.c}
+/// DRV8711SPI_t* __ENGINE; // global ptr
+/// (...)
+/// DRV8711SPI_t  ENGINE; // instance in main()
+/// __ENGINE = &ENGINE; // now ENGINE is visible in global scope till exit from main
+/// (...)
+/// setDecayMode(__ENGINE, AutoMixed);
 /// ~~~
 void setDecayMode(DRV8711SPI_t *obj, DRV8711_DECAY_MODE_t mode)
 {
@@ -464,14 +455,18 @@ void setDecayMode(DRV8711SPI_t *obj, DRV8711_DECAY_MODE_t mode)
 /// #HPSDStatusBit enum to check individual bits.
 ///
 /// Example usage:
-/// ~~~{.cpp}
-/// if (sd.readStatus() & (1 << (uint8_t)HPSDStatusBit::UVLO))
+/// ~~~{.c}
+/// DRV8711SPI_t* __ENGINE; // global ptr
+/// (...)
+/// DRV8711SPI_t  ENGINE; // instance in main()
+/// __ENGINE = &ENGINE; // now ENGINE is visible in global scope till exit from main
+/// (...)
+/// if (readStatus(__ENGINE) & (1 << (uint8_t)UVLO))
 /// {
 ///   // Undervoltage lockout is active.
 /// }
 /// ~~~
-uint8_t readStatus(DRV8711SPI_t *obj)
-{
+uint8_t readStatus(DRV8711SPI_t *obj){
 #if defined(ENGINE_SPI_ENABLE)
     if (NULL == obj)
         return 0xDE;
@@ -485,8 +480,7 @@ uint8_t readStatus(DRV8711SPI_t *obj)
 /// the motor driver outputs to reactivate.  If you do this repeatedly without
 /// fixing an abnormal condition (like a short circuit), you might damage the
 /// driver.
-void clearStatus(DRV8711SPI_t *obj)
-{
+void clearStatus(DRV8711SPI_t *obj){
 #if defined(ENGINE_SPI_ENABLE)
     if (NULL == obj)
         return;
@@ -499,8 +493,7 @@ void clearStatus(DRV8711SPI_t *obj)
 /// The return value is the same as that which would be returned by
 /// readStatus(), except it only contains bits that indicate faults (STATUS
 /// bits 5:0).
-uint8_t readFaults(DRV8711SPI_t *obj)
-{
+uint8_t readFaults(DRV8711SPI_t *obj){
 #if defined(ENGINE_SPI_ENABLE)
     if (NULL == obj)
         return 0xF;
@@ -517,8 +510,7 @@ uint8_t readFaults(DRV8711SPI_t *obj)
 /// the motor driver outputs to reactivate.  If you do this repeatedly without
 /// fixing an abnormal condition (like a short circuit), you might damage the
 /// driver.
-void clearFaults(DRV8711SPI_t *obj)
-{
+void clearFaults(DRV8711SPI_t *obj){
 #if defined(ENGINE_SPI_ENABLE)
     if (NULL == obj)
         return;
@@ -526,8 +518,7 @@ void clearFaults(DRV8711SPI_t *obj)
 #endif // ENGINE_SPI_ENABLE
 }
 
-void writeCTRL(DRV8711SPI_t *obj)
-{
+void writeCTRL(DRV8711SPI_t *obj){
 #if defined(ENGINE_SPI_ENABLE)
     if (NULL == obj)
         return;
@@ -536,8 +527,7 @@ void writeCTRL(DRV8711SPI_t *obj)
 }
 
 /// Writes the cached value of the TORQUE register to the device.
-void writeTORQUE(DRV8711SPI_t *obj)
-{
+void writeTORQUE(DRV8711SPI_t *obj){
 #if defined(ENGINE_SPI_ENABLE)
     if (NULL == obj)
         return;
@@ -546,8 +536,7 @@ void writeTORQUE(DRV8711SPI_t *obj)
 }
 
 /// Writes the cached value of the OFF register to the device.
-void writeOFF(DRV8711SPI_t *obj)
-{
+void writeOFF(DRV8711SPI_t *obj){
 #if defined(ENGINE_SPI_ENABLE)
     if (NULL == obj)
         return;
@@ -556,8 +545,7 @@ void writeOFF(DRV8711SPI_t *obj)
 }
 
 /// Writes the cached value of the BLANK register to the device.
-void writeBLANK(DRV8711SPI_t *obj)
-{
+void writeBLANK(DRV8711SPI_t *obj){
 #if defined(ENGINE_SPI_ENABLE)
     if (NULL == obj)
         return;
@@ -566,8 +554,7 @@ void writeBLANK(DRV8711SPI_t *obj)
 }
 
 /// Writes the cached value of the DECAY register to the device.
-void writeDECAY(DRV8711SPI_t *obj)
-{
+void writeDECAY(DRV8711SPI_t *obj){
 #if defined(ENGINE_SPI_ENABLE)
     if (NULL == obj)
         return;
@@ -576,8 +563,7 @@ void writeDECAY(DRV8711SPI_t *obj)
 }
 
 /// Writes the cached value of the STALL register to the device.
-void writeSTALL(DRV8711SPI_t *obj)
-{
+void writeSTALL(DRV8711SPI_t *obj){
 #if defined(ENGINE_SPI_ENABLE)
     if (NULL == obj)
         return;
@@ -586,8 +572,7 @@ void writeSTALL(DRV8711SPI_t *obj)
 }
 
 /// Writes the cached value of the DRIVE register to the device.
-void writeDRIVE(DRV8711SPI_t *obj)
-{
+void writeDRIVE(DRV8711SPI_t *obj){
 #if defined(ENGINE_SPI_ENABLE)
     if (NULL == obj)
         return;
