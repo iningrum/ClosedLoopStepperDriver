@@ -123,11 +123,13 @@ uint16_t readReg(DRV8711SPI_t *obj, DRV8711_REGISTER_ADDRESS_t address)
     // the second byte (12 bits total).
     // TODO
     selectChip(obj);
-    //uint16_t dataOut = transfer((0x8 | (address & 0b111)) << 12);
-    HAL_SPI_Transmit(obj->hspi1, (uint8_t*)address, 1, 100);
-    uint8_t result;
-    HAL_SPI_Receive(obj->hspi1, &result, 2, 100);
+    uint16_t payload = (0x8 | (address & 0b111)) << 12U;
+    SPI_TX_BUFFER[0U] = (uint8_t)(payload & 0xFF00);
+    SPI_TX_BUFFER[1U] = (uint8_t)(payload & 0x00FF);
+    HAL_SPI_Transmit(obj->hspi1, (uint8_t*)SPI_TX_BUFFER, 2, 100);
+    HAL_SPI_Receive(obj->hspi1, (uint8_t*)SPI_RX_BUFFER, 2, 100);
     deselectChip(obj);
+    uint16_t result = ((SPI_RX_BUFFER[0U] << 8U) | SPI_RX_BUFFER[1U]);
     return result;
 };
 
@@ -139,11 +141,11 @@ void writeReg(DRV8711SPI_t *obj, uint8_t address, uint16_t value)
     // the second byte (12 bits total).
 
     selectChip(obj);
+    // [adr][]
     uint16_t payload = ((address & 0b111) << 12) | (value & 0xFFF);
     SPI_TX_BUFFER[0U] = (uint8_t)(payload & 0xFF00);
     SPI_TX_BUFFER[1U] = (uint8_t)(payload & 0x00FF);
-    SPI_TX_BUFFER[2U] = 0x00;
-    HAL_SPI_Transmit(obj->hspi1, (uint8_t*)SPI_TX_BUFFER, 16, 100);
+    HAL_SPI_Transmit(obj->hspi1, (uint8_t*)SPI_TX_BUFFER, 2, 100);
     //transfer(((address & 0b111) << 12) | (value & 0xFFF));
 
     // The CS line must go low after writing for the value to actually take
@@ -197,7 +199,7 @@ void setChipSelectPin(DRV8711SPI_t *obj, GPIO_TypeDef *gpio_base_address, uint16
 #endif // ENGINE_SPI_ENABLE
 }
 
-/// Changes all of the driver's settings back to their default values.
+/// resets entire driver. prepare for work
 ///
 /// It is good to call this near the beginning of your program to ensure that
 /// there are no settings left over from an earlier time that might affect the
@@ -214,6 +216,8 @@ void resetSettings(DRV8711SPI_t *obj)
     obj->decay = 0x110;
     obj->stall = 0x040;
     obj->drive = 0xA59;
+    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_3, (GPIO_PinState) 1U);
+    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_2, (GPIO_PinState) 1U);
     applySettings(obj);
 #endif // ENGINE_SPI_ENABLE
 }
@@ -304,7 +308,11 @@ void setDirection(DRV8711SPI_t *obj, uint8_t right)
     if (NULL == obj)
         return;
     obj->ctrl = right; // if not right (0U), engine moves left
+#if defined(ENGINE_USE_DIR_PIN)
+    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_0, (GPIO_PinState) right);
+#else
     writeCTRL(obj);
+#endif
 #endif // ENGINE_SPI_ENABLE
 }
 

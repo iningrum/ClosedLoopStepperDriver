@@ -11,4 +11,5 @@
 #define DEBUG_LOG_ENABLE 1U
 /*********************************PARAMETERS*********************************/
 #define SPI_BUFFER_SIZE 4U
+//#define ENGINE_USE_DIR_PIN // uncomment to enable
 #endif //DRV8711_CONFIG_H

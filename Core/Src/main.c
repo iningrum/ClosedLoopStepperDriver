@@ -138,6 +138,8 @@ int main(void)
   //osDelay(1);
   LED.LED_FAULT = 0U;
   applyLed(&LED);
+  HAL_TIM_Base_Init(&htim2);
+  HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_2);
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -836,22 +838,26 @@ void StartStepperRegTask(void *argument)
   __ENGINE->hspi1 = &hspi1;
   DRV8711_init(__ENGINE);
   DRV8711SPI_setChipSelectPin(__ENGINE, GPIOA, GPIO_PIN_4);
+  resetSettings(__ENGINE);
   //setCurrentMilliamps36v4(__ENGINE, idk);
   enableDriver(__ENGINE);
   setStepMode(__ENGINE, MicroStep16);
   //clearFaults(__ENGINE);
   //clearStatus(__ENGINE);
-
-  //setDirection(__ENGINE, 1U);
+  setDirection(__ENGINE, 1U);
 
   /* Infinite loop */
   for(;;)
   {
-	 for(unsigned int i=0; i<1024U; i++){
-		 step(__ENGINE);
-		 osDelay(1);
-	 }
-    osDelay(250);
+    osDelay(500); // wait 500ms
+    setStepMode(__ENGINE, MicroStep32);
+    osDelay(500); // wait 500ms
+    setStepMode(__ENGINE, MicroStep64);
+    setDirection(__ENGINE, __ENGINE->ctrl ^ 1U); // toggle direction
+    osDelay(500); // wait 500ms
+    setStepMode(__ENGINE, MicroStep32);
+    osDelay(500); // wait 500ms
+    setStepMode(__ENGINE, MicroStep16);
   }
   /* USER CODE END StartStepperRegTask */
 }
@@ -940,6 +946,7 @@ void assert_failed(uint8_t *file, uint32_t line)
   /* USER CODE BEGIN 6 */
   /* User can add his own implementation to report the file name and line number,
      ex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
+    printf("Assertion failed. Wrong parameters value: file %s on line %d\r\n", file, line)
   /* USER CODE END 6 */
 }
 #endif /* USE_FULL_ASSERT */
